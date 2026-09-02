@@ -1,0 +1,38 @@
+name: Reusable Slack Notification
+
+on:
+  workflow_call:
+    inputs:
+      message:
+        description: "Message text to include in the Slack notification"
+        required: true
+        type: string
+      status:
+        description: "Status/result of the job to report (e.g. success, failure)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      SLACK_WEBHOOK_URL:
+        description: "Slack incoming webhook URL"
+        required: true
+
+jobs:
+  slack-notification:
+    name: Send Slack notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MESSAGE: ${{ inputs.message }}
+          STATUS: ${{ inputs.status }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL secret is not set. Skipping Slack notification."
+            exit 0
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"GitHub Actions job finished. Status: ${STATUS}. Message: ${MESSAGE}\"}" \
+            "$SLACK_WEBHOOK_URL"
